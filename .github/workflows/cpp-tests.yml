@@ -1,0 +1,29 @@
+name: C++ tests and coverage
+
+on:
+  push:
+    branches: [lab1, lab2, lab3]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Install coverage reporter
+        run: python -m pip install gcovr==8.3
+      - name: Generate coverage report
+        run: >-
+          gcovr --root . --filter 'src/' --exclude-unreachable-branches
+          --print-summary --html-details coverage-report/index.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab1-coverage-report
+          path: coverage-report
