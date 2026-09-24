@@ -18,6 +18,22 @@
 
 Требуются CMake 3.15+, компилятор с поддержкой C++17 и подключение к Интернету при первой конфигурации для загрузки Google Test.
 
+### Быстрый запуск в Windows
+
+Один раз установите инструменты и перезапустите VS Code:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+После этого сборка и тесты запускаются одной командой:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+### Ручной запуск
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
