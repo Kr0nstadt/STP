@@ -7,8 +7,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
 $packages = @(
     @{ Id = "Kitware.CMake"; Name = "CMake" },
-    @{ Id = "Ninja-build.Ninja"; Name = "Ninja" },
-    @{ Id = "LLVM.LLVM"; Name = "LLVM/Clang" }
+    @{ Id = "BrechtSanders.WinLibs.POSIX.UCRT"; Name = "WinLibs/MinGW C++" }
 )
 
 foreach ($package in $packages) {
