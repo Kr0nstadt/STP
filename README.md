@@ -14,6 +14,22 @@
 
 ## Сборка и запуск тестов
 
+### Быстрый запуск в Windows
+
+Один раз установите инструменты сборки:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+После установки перезапустите VS Code. Затем для сборки и запуска всех тестов используйте:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+### Ручной запуск
+
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build --parallel
