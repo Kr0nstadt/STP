@@ -112,7 +112,15 @@ else {
     New-Item -ItemType Junction -Path $sourceLink -Target $repository | Out-Null
 }
 
-$buildDirectory = Join-Path $sourceLink "build"
+$branchName = (& git -C $repository branch --show-current).Trim()
+if (-not $branchName) {
+    $branchName = "detached"
+}
+$safeBranchName = $branchName -replace "[^A-Za-z0-9._-]", "_"
+$buildRoot = Join-Path $env:LOCALAPPDATA "CMakeBuilds\STP"
+$buildDirectory = Join-Path $buildRoot $safeBranchName
+New-Item -ItemType Directory -Path $buildDirectory -Force | Out-Null
+
 $sourceForCmake = $sourceLink.Replace("\", "/")
 $buildForCmake = $buildDirectory.Replace("\", "/")
 
