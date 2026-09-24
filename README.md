@@ -10,6 +10,28 @@
 
 Требуются CMake 3.15+, компилятор C++17 и подключение к Интернету при первой конфигурации.
 
+### Быстрый запуск в Windows
+
+Один раз установите инструменты и перезапустите VS Code:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+Запуск только модульных тестов:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+Сборка, тестирование и запуск графического приложения:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1 -App
+```
+
+### Ручной запуск
+
 ```bash
 cmake -S . -B build
 cmake --build build --parallel
