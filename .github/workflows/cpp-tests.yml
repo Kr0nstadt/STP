@@ -1,0 +1,39 @@
+name: C++ tests
+
+on:
+  push:
+    branches: [lab5]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pickup
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pickup"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PICKUP_TEST_DB: host=localhost port=5432 dbname=pickup user=postgres password=postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libfltk1.3-dev libpqxx-dev libpq-dev postgresql-client
+      - name: Initialize database
+        run: psql -h localhost -U postgres -d pickup -f schema.sql
+      - name: Configure
+        run: cmake -S . -B build -DBUILD_GUI=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
