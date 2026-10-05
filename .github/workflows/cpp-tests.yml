@@ -1,0 +1,29 @@
+name: C++ tests
+
+on:
+  push:
+    branches: [lab4]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure tests
+        run: cmake -S . -B build -DBUILD_GUI=OFF -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GUI dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libfontconfig1-dev
+      - name: Configure application
+        run: cmake -S . -B build -DBUILD_GUI=ON -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --parallel

@@ -149,7 +149,7 @@ try {
         $configureArguments += "-DBUILD_TESTING=ON"
     }
     elseif ($App) {
-        throw "The -App option is available only in the lab3 branch."
+        throw "The -App option is available only in Task Manager branches."
     }
 
     Write-Host "Configuring project..." -ForegroundColor Cyan
