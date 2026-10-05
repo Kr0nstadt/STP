@@ -1,73 +1,10 @@
 #include "taskmanager.h"
 
-// ============================================================
-//  TODO: реализуйте ВСЕ методы TaskManager по спецификации.
-//
-//  ----- Базовые операции (были в лабораторной №3) -----
-//
-//  Конструктор:
-//    nextTaskId    = 1
-//    nextProjectId = 1
-//    Репозитории пусты по умолчанию.
-//
-//  AddProject(name):
-//    - создать Project(nextProjectId, name);
-//    - увеличить nextProjectId на 1;
-//    - добавить в projectRepository.
-//
-//  DeleteProject(index):
-//    - если index вне диапазона — выйти;
-//    - взять id проекта;
-//    - УДАЛИТЬ ВСЕ ЗАДАЧИ ЭТОГО ПРОЕКТА (обход С КОНЦА,
-//      иначе индексы сдвинутся после Remove);
-//    - удалить проект из projectRepository.
-//
-//  GetProjects():
-//    - вернуть projectRepository.GetAll().
-//
-//  AddTask(title, description, priority, status, projectId):
-//    - создать Task(nextTaskId, title, projectId);
-//    - увеличить nextTaskId на 1;
-//    - установить description, priority, status;
-//    - добавить в taskRepository.
-//
-//  UpdateTask(index, title, description, priority, status):
-//    - если index вне диапазона — выйти;
-//    - взять задачу по индексу;
-//    - поменять title, description, priority, status
-//      (id и projectId НЕ трогать!);
-//    - положить обратно через taskRepository.Update.
-//
-//  DeleteTask(index):
-//    - taskRepository.Remove(index).
-//
-//  GetTasks():
-//    - вернуть taskRepository.GetAll().
-//
-//  ----- Новые операции (лабораторная №4) -----
-//
-//  MoveTaskToProject(taskIndex, projectId):
-//    - если taskIndex вне диапазона — вернуть false;
-//    - если projectId != 0 и такого проекта нет — вернуть false;
-//    - взять задачу, вызвать SetProjectId(projectId);
-//    - обновить через taskRepository.Update;
-//    - вернуть true.
-//    id задачи НЕ меняется.
-//
-//  CountTasksInProject(projectId):
-//    - посчитать задачи, у которых GetProjectId() == projectId.
-//
-//  CountTasksInProjectByStatus(projectId, status):
-//    - посчитать задачи проекта с указанным статусом.
-//
-//  CompletionPercent(projectId):
-//    - если задач в проекте нет — вернуть 0.0;
-//    - иначе 100.0 * (число задач со статусом "Done") / (всего задач).
-// ============================================================
+#include <utility>
 
 TaskManager::TaskManager()
+    : nextTaskId(1), nextProjectId(1)
 {
-    // TODO: nextTaskId = 1; nextProjectId = 1;
 }
 
 void TaskManager::AddTask(std::string title,
@@ -76,12 +13,12 @@ void TaskManager::AddTask(std::string title,
                           std::string status,
                           int projectId)
 {
-    // TODO
-    (void)title;
-    (void)description;
-    (void)priority;
-    (void)status;
-    (void)projectId;
+    Task task(nextTaskId, std::move(title), projectId);
+    task.SetDescription(std::move(description));
+    task.SetPriority(std::move(priority));
+    task.SetStatus(std::move(status));
+    taskRepository.Add(std::move(task));
+    ++nextTaskId;
 }
 
 void TaskManager::UpdateTask(int index,
@@ -90,70 +27,137 @@ void TaskManager::UpdateTask(int index,
                              std::string priority,
                              std::string status)
 {
-    // TODO
-    (void)index;
-    (void)title;
-    (void)description;
-    (void)priority;
-    (void)status;
+    std::vector<Task> tasks = taskRepository.GetAll();
+    if (index < 0 || index >= static_cast<int>(tasks.size()))
+    {
+        return;
+    }
+
+    Task task = std::move(tasks[index]);
+    task.SetTitle(std::move(title));
+    task.SetDescription(std::move(description));
+    task.SetPriority(std::move(priority));
+    task.SetStatus(std::move(status));
+    taskRepository.Update(index, std::move(task));
 }
 
 void TaskManager::DeleteTask(int index)
 {
-    // TODO
-    (void)index;
+    taskRepository.Remove(index);
 }
 
 std::vector<Task> TaskManager::GetTasks()
 {
-    // TODO
-    return {};
+    return taskRepository.GetAll();
 }
 
 bool TaskManager::MoveTaskToProject(int taskIndex, int projectId)
 {
-    // TODO
-    (void)taskIndex;
-    (void)projectId;
-    return false;
+    std::vector<Task> tasks = taskRepository.GetAll();
+    if (taskIndex < 0 || taskIndex >= static_cast<int>(tasks.size()))
+    {
+        return false;
+    }
+
+    if (projectId != 0)
+    {
+        bool projectExists = false;
+        for (Project& project : projectRepository.GetAll())
+        {
+            if (project.getId() == projectId)
+            {
+                projectExists = true;
+                break;
+            }
+        }
+
+        if (!projectExists)
+        {
+            return false;
+        }
+    }
+
+    Task task = std::move(tasks[taskIndex]);
+    task.SetProjectId(projectId);
+    taskRepository.Update(taskIndex, std::move(task));
+    return true;
 }
 
 int TaskManager::CountTasksInProject(int projectId)
 {
-    // TODO
-    (void)projectId;
-    return 0;
+    int count = 0;
+    for (const Task& task : taskRepository.GetAll())
+    {
+        if (task.GetProjectId() == projectId)
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 int TaskManager::CountTasksInProjectByStatus(int projectId, std::string status)
 {
-    // TODO
-    (void)projectId;
-    (void)status;
-    return 0;
+    int count = 0;
+    for (const Task& task : taskRepository.GetAll())
+    {
+        if (task.GetProjectId() == projectId && task.GetStatus() == status)
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 double TaskManager::CompletionPercent(int projectId)
 {
-    // TODO
-    (void)projectId;
-    return 0.0;
+    int total = 0;
+    int completed = 0;
+    for (const Task& task : taskRepository.GetAll())
+    {
+        if (task.GetProjectId() != projectId)
+        {
+            continue;
+        }
+
+        ++total;
+        if (task.GetStatus() == "Done")
+        {
+            ++completed;
+        }
+    }
+
+    return total == 0 ? 0.0 : 100.0 * completed / total;
 }
 
 void TaskManager::AddProject(std::string name)
 {
-    // TODO
-    (void)name;
+    projectRepository.Add(Project(nextProjectId, std::move(name)));
+    ++nextProjectId;
 }
 
 void TaskManager::DeleteProject(int index)
 {
-    // TODO
-    (void)index;
+    std::vector<Project> projects = projectRepository.GetAll();
+    if (index < 0 || index >= static_cast<int>(projects.size()))
+    {
+        return;
+    }
+
+    const int projectId = projects[index].getId();
+    std::vector<Task> tasks = taskRepository.GetAll();
+    for (int taskIndex = static_cast<int>(tasks.size()) - 1; taskIndex >= 0; --taskIndex)
+    {
+        if (tasks[taskIndex].GetProjectId() == projectId)
+        {
+            taskRepository.Remove(taskIndex);
+        }
+    }
+
+    projectRepository.Remove(index);
 }
 
 std::vector<Project> TaskManager::GetProjects()
 {
-    // TODO
-    return {};
+    return projectRepository.GetAll();
 }

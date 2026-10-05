@@ -1,97 +1,87 @@
 #include "task.h"
 
-// ============================================================
-//  TODO: реализуйте ВСЕ методы Task по спецификации.
-//
-//  Конструктор:
-//    - id           = переданный id
-//    - projectId    = переданный projectId (0 = без проекта)
-//    - title        = переданный title
-//    - description  = ""
-//    - status       = "Todo"
-//    - priority     = "Medium"
-//
-//  Геттеры (GetId, GetProjectId, GetTitle, GetDescription,
-//  GetStatus, GetPriority) — возвращают значения полей.
-//  Методы помечены const — не меняют объект.
-//
-//  Сеттеры (SetProjectId, SetTitle, SetDescription,
-//  SetStatus, SetPriority) — присваивают значения.
-//  SetStatus принимает только "Todo" | "In Progress" | "Done".
-//  SetPriority принимает только "Low" | "Medium" | "High".
-//  При недопустимом значении поле НЕ меняется.
-// ============================================================
+#include <utility>
+
+namespace
+{
+bool IsValidStatus(const std::string& status)
+{
+    return status == "Todo" || status == "In Progress" || status == "Done";
+}
+
+bool IsValidPriority(const std::string& priority)
+{
+    return priority == "Low" || priority == "Medium" || priority == "High";
+}
+}
 
 Task::Task(int id, std::string title, int projectId)
+    : id(id),
+      projectId(projectId),
+      title(std::move(title)),
+      description(),
+      status("Todo"),
+      priority("Medium")
 {
-    // TODO: инициализировать поля
-    (void)id;
-    (void)title;
-    (void)projectId;
 }
 
 int Task::GetId() const
 {
-    // TODO
-    return 0;
+    return id;
 }
 
 int Task::GetProjectId() const
 {
-    // TODO
-    return 0;
+    return projectId;
 }
 
 std::string Task::GetTitle() const
 {
-    // TODO
-    return "";
+    return title;
 }
 
 std::string Task::GetDescription() const
 {
-    // TODO
-    return "";
+    return description;
 }
 
 std::string Task::GetStatus() const
 {
-    // TODO
-    return "";
+    return status;
 }
 
 std::string Task::GetPriority() const
 {
-    // TODO
-    return "";
+    return priority;
 }
 
 void Task::SetProjectId(int projectId)
 {
-    // TODO
-    (void)projectId;
+    this->projectId = projectId;
 }
 
 void Task::SetTitle(std::string title)
 {
-    // TODO
-    (void)title;
+    this->title = std::move(title);
 }
 
 void Task::SetDescription(std::string description)
 {
-    // TODO
-    (void)description;
+    this->description = std::move(description);
 }
 
 void Task::SetStatus(std::string status)
 {
-    // TODO
-    (void)status;
+    if (IsValidStatus(status))
+    {
+        this->status = std::move(status);
+    }
 }
 
 void Task::SetPriority(std::string priority)
 {
-    // TODO
-    (void)priority;
+    if (IsValidPriority(priority))
+    {
+        this->priority = std::move(priority);
+    }
 }
