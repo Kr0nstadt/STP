@@ -20,22 +20,15 @@ public:
 private:
     friend class odb::access;
 
-    // TODO: допишите ODB-прагмы для полей класса Assignment.
-    //
-    // Требования к маппингу на таблицу assignments:
-    //
-    //   id_         — первичный ключ, генерируется базой.
-    //   assetId_    — обязательный внешний ключ, колонка "asset_id".
-    //   employeeId_ — обязательный внешний ключ, колонка "employee_id".
-    //   issuedAt_   — обязательное, колонка "issued_at".
-    //   returnedAt_ — НЕОБЯЗАТЕЛЬНОЕ (nullable): у активной выдачи ещё нет
-    //                 даты возврата. Колонка "returned_at".
-    //                 В C++ тип — odb::nullable<std::time_t>.
-    //
 
+    #pragma db id auto
     long id_ = 0;
+    #pragma db not_null column("asset_id")
     long assetId_ = 0;
+    #pragma db not_null column("employee_id")
     long employeeId_ = 0;
+    #pragma db not_null column("issued_at")
     std::time_t issuedAt_ = 0;
+    #pragma db null column("returned_at")
     odb::nullable<std::time_t> returnedAt_;
 };

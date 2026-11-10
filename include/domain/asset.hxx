@@ -19,22 +19,15 @@ public:
 private:
     friend class odb::access;
 
-    // TODO: допишите ODB-прагмы для полей класса Asset.
-    //
-    // Требования к маппингу на таблицу assets:
-    //
-    //   id_              — первичный ключ, генерируется базой (BIGSERIAL).
-    //   inventoryNumber_ — обязательное, уникальное, колонка "inventory_number".
-    //   model_           — обязательное, колонка "model".
-    //   category_        — обязательное, колонка "category".
-    //   assigned_        — обязательное, колонка "assigned".
-    //
-    // Подсказка: в include/domain/employee.hxx все прагмы уже написаны —
-    // используйте его как образец. Там есть id auto, not_null, unique, column.
 
+    #pragma db id auto
     long id_ = 0;
+    #pragma db not_null unique column("inventory_number")
     std::string inventoryNumber_;
+    #pragma db not_null column("model")
     std::string model_;
+    #pragma db not_null column("category")
     std::string category_;
+    #pragma db not_null column("assigned")
     bool assigned_ = false;
 };
