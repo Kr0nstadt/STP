@@ -1,0 +1,72 @@
+name: DataConverter CI
+
+on:
+  push:
+    branches: [lab6]
+  pull_request:
+    branches: [lab6]
+  workflow_dispatch:
+    inputs:
+      fail_fast:
+        description: Cancel other matrix jobs on failure
+        type: boolean
+        default: false
+      test_failure:
+        description: Run an intentionally failing test on Ubuntu
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: ${{ inputs.fail_fast == true }}
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .dependencies
+          key: dataconverter-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', '.github/workflows/ci.yml') }}
+      - name: Fetch dependencies
+        run: |
+          mkdir -p .dependencies
+          for dependency in yaml-cpp googletest; do
+            if [ "$dependency" = yaml-cpp ]; then
+              url=https://codeload.github.com/jbeder/yaml-cpp/tar.gz/refs/tags/yaml-cpp-0.9.0
+            else
+              url=https://codeload.github.com/google/googletest/tar.gz/refs/tags/v1.14.0
+            fi
+            if [ ! -d ".dependencies/$dependency" ]; then
+              curl --fail --location --retry 3 "$url" -o dependency.tar.gz
+              mkdir ".dependencies/$dependency"
+              tar -xf dependency.tar.gz -C ".dependencies/$dependency" --strip-components=1
+              rm dependency.tar.gz
+            fi
+          done
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DFETCHCONTENT_SOURCE_DIR_YAML-CPP=.dependencies/yaml-cpp \
+            -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=.dependencies/googletest \
+            -DDATACONV_TEST_FAILURE=${{ inputs.test_failure == true && matrix.os == 'ubuntu-latest' && 'ON' || 'OFF' }}
+          cmake --build build --config Release --parallel 2
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure --no-tests=error --output-junit test-results.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            build/test-results.xml
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+

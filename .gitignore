@@ -6,3 +6,4 @@ vcpkg_installed/
 *.json.tmp
 *.yaml.tmp
 *.yml.tmp
+.dependencies/
