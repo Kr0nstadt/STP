@@ -2,6 +2,7 @@
 #include "domain.hxx"
 #include <odb/pgsql/database.hxx>
 #include <vector>
+#include <memory>
 #include <string>
 
 struct AssetRow {
@@ -34,5 +35,13 @@ public:
     std::vector<Asset>    freeAssets();
 
 private:
+    void persistAsset(const std::string& inv, const std::string& model,
+                      const std::string& category);
+    Asset lockAsset(long id);
+    Employee lockEmployee(long id);
+    std::unique_ptr<Assignment> activeAssignment(long assetId);
+    void recordIssue(long assetId, long employeeId, std::time_t issuedAt);
+    void assign(Asset& asset, long employeeId, std::time_t issuedAt);
+
     odb::pgsql::database& db_;
 };
