@@ -1,106 +1,34 @@
-# Стоп-кадр — учёт техники фотостудии
+# Лабораторная работа №7 — Стоп-кадр
 
-Настольное учебное приложение для учёта фототехники: фотографы, единицы техники
-(камеры, объективы, вспышки, штативы, свет), выдача на съёмку и возврат в стойку.
+Приложение фотостудии ведёт список фотографов, каталог техники и журнал выдач. Интерфейс работает на FLTK, данные хранятся в PostgreSQL через ODB.
 
-**Стек:** C++17 · ODB (ORM) · PostgreSQL · CMake · FLTK 1.3
+## Сборка на Ubuntu 24.04
 
----
-
-## 1. Установка зависимостей
-
-**Debian / Ubuntu**
-
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib \
-    cmake g++ libfltk1.3-dev libpq-dev \
-    libodb-dev libodb-pgsql-dev odb
-```
-
-**Fedora / RHEL**
-
-```bash
-sudo dnf install postgresql-server postgresql-contrib \
-    cmake gcc-c++ fltk-devel libpq-devel \
-    libodb-devel libodb-pgsql-devel odb
-sudo postgresql-setup --initdb
-```
-
-**macOS (Homebrew)**
-
-```bash
-brew install postgresql@15 cmake fltk libpq odb
-brew services start postgresql@15
-```
-
-Проверка, что ODB-компилятор на месте:
-
-```bash
-odb --version    # должно быть 2.4.0 или новее
-```
-
----
-
-## 2. База данных
-
-Запустить PostgreSQL (если не запущен):
-
-```bash
-sudo systemctl start postgresql       # Linux
-brew services start postgresql@15     # macOS
-```
-
-Cоздать базу:
-
-```bash
-sudo -u postgres createdb stopkadr
-sudo -u postgres psql -d stopkadr -f sql/schema.sql
-```
-
-Дать права вашему пользователю на работу с базой.
-
----
-
-## 3. Переменные окружения
-
-> Порядок параметров `odb::pgsql::database` в ODB 2.4.0 — `(user, password, dbname, host)`.
-> Поэтому имена переменных **не совпадают** с тем, что они содержат.
-
-```bash
-export EQDB_NAME=ВАШЕ      # → уходит в user
-export EQDB_USER=ВАШЕ      # → уходит в password
-export EQDB_PASS=stopkadr      # → уходит в dbname
-export EQDB_HOST=localhost
-```
-
-Добавить в `~/.bashrc`, чтобы не повторять:
-
-```bash
-cat >> ~/.bashrc <<'EOF'
-export EQDB_NAME=ВАШЕ
-export EQDB_USER=ВАШЕ
-export EQDB_PASS=stopkadr
-export EQDB_HOST=localhost
-EOF
-source ~/.bashrc
-```
-
-
----
-
-## 4. Сборка
-
-```bash
-rm -rf build
+```sh
+sudo apt install g++ g++-12 cmake libfltk1.3-dev libgl-dev libpq-dev \
+    libodb-dev libodb-pgsql-dev odb postgresql
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
+cmake --build build --parallel
 ```
 
----
+Пакет `odb` в Ubuntu 24.04 использует `g++-12` для генерации кода. Сборка приложения использует C++17.
 
-## 5. Запуск
+## Подключение и запуск
 
-```bash
-./build/stopkadr
+Запустите PostgreSQL. Для подключения через локальный Unix-сокет нужна роль PostgreSQL с именем текущего пользователя. Если роли ещё нет, создайте её командой `sudo -u postgres createuser "$USER"`. Создайте отдельную базу, поскольку скрипт схемы пересоздаёт таблицы.
+
+```sh
+sudo -u postgres createdb -O "$USER" stopkadr
+psql -v ON_ERROR_STOP=1 -d stopkadr -f sql/schema.sql
+EQDB_NAME="$USER" EQDB_USER='' EQDB_PASS=stopkadr \
+    EQDB_HOST=/var/run/postgresql ./build/stopkadr
 ```
+
+В выданном проекте `EQDB_NAME` передаётся как пользователь, `EQDB_USER` как пароль, `EQDB_PASS` как имя базы. `EQDB_HOST` задаёт хост или каталог сокета.
+
+## Проверка
+
+Создайте фотографа и камеру, выдайте камеру фотографу и проверьте колонку «У кого». Пока камера выдана, приложение отклоняет повторную выдачу и увольнение фотографа. После возврата держатель исчезает, а камеру можно выдать снова.
+
+Список техники читает фотографов, активные выдачи и каталог тремя запросами в одной транзакции. Поэтому количество запросов при обновлении списка не зависит от числа единиц техники.
+
