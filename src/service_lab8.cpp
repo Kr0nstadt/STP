@@ -11,31 +11,32 @@ using QAst = odb::query<Asset>;
 using QEmp = odb::query<Employee>;
 using QAsg = odb::query<Assignment>;
 
-// Лабораторная 8: 8 методов через ODB.
-// Готово: searchAssets, listAssetsPaged, assetHistory, employeeAssets.
-// Реализуйте: duplicateAsset, issueMultiple, reassignAsset, deleteAssetCascade.
-
-// ------------------------------------------------------------
-// Копирование техники. newInv должен быть уникален.
-// Ошибка: "Инвентарный номер <newInv> уже существует".
-// ------------------------------------------------------------
 void Service::duplicateAsset(long sourceId, const std::string& newInv) {
-    (void)sourceId;
-    (void)newInv;
-    throw std::logic_error("Service::duplicateAsset not implemented");
+    odb::transaction tx(db_.begin());
+    const auto source = db_.load<Asset>(sourceId);
+    persistAsset(newInv, source->model(), source->category());
+    tx.commit();
 }
 
-// ------------------------------------------------------------
-// Выдать N единиц одному фотографу одной транзакцией.
-// Ошибки: "Не выбрано ни одной единицы техники",
-//         "Нельзя выдать уволенному фотографу",
-//         "Техника <inv> уже выдана".
-// При ошибке — ни одна не выдана.
-// ------------------------------------------------------------
 void Service::issueMultiple(const std::vector<long>& assetIds, long employeeId) {
-    (void)assetIds;
-    (void)employeeId;
-    throw std::logic_error("Service::issueMultiple not implemented");
+    if (assetIds.empty())
+        throw DomainError("Не выбрано ни одной единицы техники");
+
+    auto ids = assetIds;
+    std::sort(ids.begin(), ids.end());
+
+    odb::transaction tx(db_.begin());
+    const auto employee = lockEmployee(employeeId);
+    if (!employee.isActive())
+        throw DomainError("Нельзя выдать уволенному фотографу");
+    const auto issuedAt = std::time(nullptr);
+    for (long id : ids) {
+        auto asset = lockAsset(id);
+        if (asset.isAssigned())
+            throw DomainError("Техника " + asset.inventoryNumber() + " уже выдана");
+        assign(asset, employeeId, issuedAt);
+    }
+    tx.commit();
 }
 
 std::vector<Asset> Service::searchAssets(const std::string& category,
@@ -155,24 +156,33 @@ std::vector<Asset> Service::employeeAssets(long employeeId) {
     return out;
 }
 
-// ------------------------------------------------------------
-// Передать выданную технику другому фотографу.
-// Ошибки: "Техника не выдана — используйте «Выдать»",
-//         "Нельзя переназначить уволенному фотографу",
-//         "Нет активной выдачи",
-//         "Техника уже у этого фотографа".
-// ------------------------------------------------------------
 void Service::reassignAsset(long assetId, long newEmployeeId) {
-    (void)assetId;
-    (void)newEmployeeId;
-    throw std::logic_error("Service::reassignAsset not implemented");
+    odb::transaction tx(db_.begin());
+    const auto employee = lockEmployee(newEmployeeId);
+    const auto asset = lockAsset(assetId);
+    if (!asset.isAssigned())
+        throw DomainError("Техника не выдана — используйте «Выдать»");
+    if (!employee.isActive())
+        throw DomainError("Нельзя переназначить уволенному фотографу");
+    auto assignment = activeAssignment(assetId);
+    if (!assignment)
+        throw DomainError("Нет активной выдачи");
+    if (assignment->employeeId() == newEmployeeId)
+        throw DomainError("Техника уже у этого фотографа");
+
+    const auto now = std::time(nullptr);
+    assignment->setReturnedAt(now);
+    db_.update(*assignment);
+    recordIssue(assetId, newEmployeeId, now);
+    tx.commit();
 }
 
-// ------------------------------------------------------------
-// Удалить технику и все её выдачи. Только если не выдана.
-// Ошибка: "Нельзя удалить выданную технику — сначала примите возврат".
-// ------------------------------------------------------------
 void Service::deleteAssetCascade(long assetId) {
-    (void)assetId;
-    throw std::logic_error("Service::deleteAssetCascade not implemented");
+    odb::transaction tx(db_.begin());
+    const auto asset = lockAsset(assetId);
+    if (asset.isAssigned())
+        throw DomainError("Нельзя удалить выданную технику — сначала примите возврат");
+    db_.erase_query<Assignment>(QAsg::assetId == assetId);
+    db_.erase<Asset>(assetId);
+    tx.commit();
 }
